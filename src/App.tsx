@@ -91,6 +91,7 @@ export default function App() {
   // Style State
   const [format, setFormat] = useState("9:16");
   const [cardStyle, setCardStyle] = useState("default");
+  const [cardBgColor, setCardBgColor] = useState("#18181b");
   const [font, setFont] = useState("Montserrat");
   const [textColor, setTextColor] = useState("#ffffff");
   const [gradient, setGradient] = useState("none");
@@ -324,7 +325,7 @@ FRASE 2: Outra frase diferente
       position: 'relative',
       overflow: 'hidden',
       transition: 'all 0.3s ease',
-      backgroundColor: '#18181b', // zinc-900
+      backgroundColor: cardBgColor, // Use state instead of hardcoded zinc-900
       color: '#ffffff', // Force hex color to prevent oklch inheritance
     };
 
@@ -529,6 +530,24 @@ FRASE 2: Outra frase diferente
                   >
                     {CARD_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-zinc-400">Cor do Fundo</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="color" 
+                    value={cardBgColor} 
+                    onChange={(e) => setCardBgColor(e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer bg-zinc-950 border border-zinc-800 p-1 shrink-0"
+                  />
+                  <input 
+                    type="text" 
+                    value={cardBgColor} 
+                    onChange={(e) => setCardBgColor(e.target.value)}
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500 uppercase"
+                  />
                 </div>
               </div>
 
