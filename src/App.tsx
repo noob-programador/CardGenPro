@@ -99,6 +99,9 @@ interface SavedCard {
   textBorderWidth: number;
   textBorderStyle: string;
   textBorderColor: string;
+  cardBorderWidth: number;
+  cardBorderStyle: string;
+  cardBorderColor: string;
   imageFilter: string;
   shadowColor: string;
   shadowX: number;
@@ -124,6 +127,9 @@ export default function App() {
   const [textBorderWidth, setTextBorderWidth] = useState(0);
   const [textBorderStyle, setTextBorderStyle] = useState("solid");
   const [textBorderColor, setTextBorderColor] = useState("#ffffff");
+  const [cardBorderWidth, setCardBorderWidth] = useState(8);
+  const [cardBorderStyle, setCardBorderStyle] = useState("solid");
+  const [cardBorderColor, setCardBorderColor] = useState("#6366f1");
   const [imageFilter, setImageFilter] = useState("brightness(80%)");
   
   // Shadow State
@@ -173,6 +179,7 @@ export default function App() {
       quote, handle, bgImage, format, cardStyle, cardBgColor,
       font, textColor, gradient, fontSize, textAlign,
       textBorderWidth, textBorderStyle, textBorderColor,
+      cardBorderWidth, cardBorderStyle, cardBorderColor,
       imageFilter, shadowColor, shadowX, shadowY, shadowBlur
     };
     setSavedCards([newCard, ...savedCards]);
@@ -194,6 +201,9 @@ export default function App() {
     setTextBorderWidth(card.textBorderWidth);
     setTextBorderStyle(card.textBorderStyle);
     setTextBorderColor(card.textBorderColor);
+    setCardBorderWidth(card.cardBorderWidth ?? 8);
+    setCardBorderStyle(card.cardBorderStyle ?? "solid");
+    setCardBorderColor(card.cardBorderColor ?? "#6366f1");
     setImageFilter(card.imageFilter);
     setShadowColor(card.shadowColor);
     setShadowX(card.shadowX);
@@ -203,7 +213,9 @@ export default function App() {
   };
 
   const deleteSavedCard = (id: string) => {
-    setSavedCards(savedCards.filter(c => c.id !== id));
+    if (window.confirm("Tem certeza que deseja excluir este card salvo?")) {
+      setSavedCards(savedCards.filter(c => c.id !== id));
+    }
   };
 
   const applyQuickStyle = (styleName: string) => {
@@ -239,6 +251,9 @@ export default function App() {
         setCardBgColor('#18181b');
         setGradient('none');
         setTextBorderWidth(0);
+        setCardBorderWidth(8);
+        setCardBorderStyle('solid');
+        setCardBorderColor('#f59e0b');
         setShadowColor('#000000');
         setShadowX(1);
         setShadowY(1);
@@ -464,7 +479,7 @@ FRASE 2: Outra frase diferente
 
     switch (cardStyle) {
       case 'bordered':
-        baseStyle.border = '8px solid #6366f1';
+        baseStyle.border = `${cardBorderWidth}px ${cardBorderStyle} ${cardBorderColor}`;
         baseStyle.borderRadius = '24px';
         break;
       case 'gradient-purple':
@@ -726,6 +741,52 @@ FRASE 2: Outra frase diferente
                   />
                 </div>
               </div>
+
+              {cardStyle === 'bordered' && (
+                <div className="space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                  <h4 className="text-xs font-semibold text-zinc-300">Configurações da Borda</h4>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <label className="text-xs font-medium text-zinc-400">Espessura: {cardBorderWidth}px</label>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" max="32" 
+                      value={cardBorderWidth} 
+                      onChange={(e) => setCardBorderWidth(Number(e.target.value))}
+                      className="w-full accent-indigo-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-zinc-400">Estilo</label>
+                      <select 
+                        value={cardBorderStyle} 
+                        onChange={(e) => setCardBorderStyle(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm outline-none focus:border-indigo-500"
+                      >
+                        <option value="solid">Sólido</option>
+                        <option value="dashed">Tracejado</option>
+                        <option value="dotted">Pontilhado</option>
+                        <option value="double">Duplo</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-zinc-400">Cor</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="color" 
+                          value={cardBorderColor} 
+                          onChange={(e) => setCardBorderColor(e.target.value)}
+                          className="w-full h-10 rounded cursor-pointer bg-zinc-950 border border-zinc-800 p-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <hr className="border-zinc-800" />
 
