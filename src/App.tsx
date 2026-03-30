@@ -6,7 +6,7 @@ import {
   Download, Image as ImageIcon, Type, Palette, 
   Sparkles, RefreshCw, Upload, AlignLeft, 
   AlignCenter, AlignRight, CheckCircle2, AlertCircle,
-  ChevronDown, ChevronUp, Wand2
+  ChevronDown, ChevronUp, Wand2, Save, Bookmark, Trash2
 } from 'lucide-react';
 
 const QUOTES = [
@@ -82,6 +82,30 @@ const IMAGE_FILTERS = [
   { value: "blur(4px)", label: "Desfoque" }
 ];
 
+interface SavedCard {
+  id: string;
+  date: number;
+  quote: string;
+  handle: string;
+  bgImage: string | null;
+  format: string;
+  cardStyle: string;
+  cardBgColor: string;
+  font: string;
+  textColor: string;
+  gradient: string;
+  fontSize: number;
+  textAlign: "left" | "center" | "right";
+  textBorderWidth: number;
+  textBorderStyle: string;
+  textBorderColor: string;
+  imageFilter: string;
+  shadowColor: string;
+  shadowX: number;
+  shadowY: number;
+  shadowBlur: number;
+}
+
 export default function App() {
   // Content State
   const [quote, setQuote] = useState("Acredite em si mesmo e vá em frente!");
@@ -119,12 +143,121 @@ export default function App() {
   const [aiError, setAiError] = useState("");
   
   // UI State
-  const [activeTab, setActiveTab] = useState<"content" | "style" | "ai">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "style" | "ai" | "saved">("content");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('cardgen_saved_cards');
+    if (saved) {
+      try {
+        setSavedCards(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved cards", e);
+      }
+    }
+  }, []);
+
+  React.useEffect(() => {
+    localStorage.setItem('cardgen_saved_cards', JSON.stringify(savedCards));
+  }, [savedCards]);
+
+  const handleSaveCard = () => {
+    const newCard: SavedCard = {
+      id: Date.now().toString(),
+      date: Date.now(),
+      quote, handle, bgImage, format, cardStyle, cardBgColor,
+      font, textColor, gradient, fontSize, textAlign,
+      textBorderWidth, textBorderStyle, textBorderColor,
+      imageFilter, shadowColor, shadowX, shadowY, shadowBlur
+    };
+    setSavedCards([newCard, ...savedCards]);
+    alert("Card salvo com sucesso!");
+  };
+
+  const loadSavedCard = (card: SavedCard) => {
+    setQuote(card.quote);
+    setHandle(card.handle);
+    setBgImage(card.bgImage);
+    setFormat(card.format);
+    setCardStyle(card.cardStyle);
+    setCardBgColor(card.cardBgColor || "#18181b");
+    setFont(card.font);
+    setTextColor(card.textColor);
+    setGradient(card.gradient);
+    setFontSize(card.fontSize);
+    setTextAlign(card.textAlign);
+    setTextBorderWidth(card.textBorderWidth);
+    setTextBorderStyle(card.textBorderStyle);
+    setTextBorderColor(card.textBorderColor);
+    setImageFilter(card.imageFilter);
+    setShadowColor(card.shadowColor);
+    setShadowX(card.shadowX);
+    setShadowY(card.shadowY);
+    setShadowBlur(card.shadowBlur);
+    setActiveTab('content');
+  };
+
+  const deleteSavedCard = (id: string) => {
+    setSavedCards(savedCards.filter(c => c.id !== id));
+  };
+
+  const applyQuickStyle = (styleName: string) => {
+    switch (styleName) {
+      case 'moderno':
+        setCardStyle('glass');
+        setFont('Montserrat');
+        setTextColor('#ffffff');
+        setCardBgColor('#1e1e2f');
+        setGradient('none');
+        setTextBorderWidth(0);
+        setShadowColor('#000000');
+        setShadowX(2);
+        setShadowY(2);
+        setShadowBlur(8);
+        break;
+      case 'vibrante':
+        setCardStyle('gradient-sunset');
+        setFont('Pacifico');
+        setTextColor('#ffffff');
+        setCardBgColor('#ff5f6d');
+        setGradient('none');
+        setTextBorderWidth(0);
+        setShadowColor('#000000');
+        setShadowX(2);
+        setShadowY(2);
+        setShadowBlur(4);
+        break;
+      case 'elegante':
+        setCardStyle('bordered');
+        setFont('Lobster');
+        setTextColor('#f59e0b');
+        setCardBgColor('#18181b');
+        setGradient('none');
+        setTextBorderWidth(0);
+        setShadowColor('#000000');
+        setShadowX(1);
+        setShadowY(1);
+        setShadowBlur(2);
+        break;
+      case 'minimalista':
+        setCardStyle('default');
+        setFont('Roboto');
+        setTextColor('#18181b');
+        setCardBgColor('#ffffff');
+        setGradient('none');
+        setTextBorderWidth(0);
+        setShadowColor('transparent');
+        setShadowX(0);
+        setShadowY(0);
+        setShadowBlur(0);
+        break;
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -447,6 +580,12 @@ FRASE 2: Outra frase diferente
           >
             <Wand2 size={16} /> IA
           </button>
+          <button 
+            onClick={() => setActiveTab('saved')}
+            className={`flex-1 py-3 text-sm font-medium flex justify-center items-center gap-2 transition-colors ${activeTab === 'saved' ? 'text-indigo-400 border-b-2 border-indigo-400 bg-indigo-400/5' : 'text-zinc-400 hover:text-zinc-200'}`}
+          >
+            <Bookmark size={16} /> Salvos
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
@@ -507,6 +646,43 @@ FRASE 2: Outra frase diferente
           {activeTab === 'style' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
               
+              {/* Quick Styles */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2"><Wand2 size={16}/> Estilos Rápidos</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => applyQuickStyle('moderno')}
+                    className="bg-zinc-900 border border-zinc-800 hover:border-indigo-500 hover:bg-zinc-800 text-zinc-300 text-xs py-2 px-3 rounded-lg transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="font-medium">Moderno</span>
+                    <span className="text-[10px] text-zinc-500">Glass + Escuro</span>
+                  </button>
+                  <button 
+                    onClick={() => applyQuickStyle('vibrante')}
+                    className="bg-zinc-900 border border-zinc-800 hover:border-orange-500 hover:bg-zinc-800 text-zinc-300 text-xs py-2 px-3 rounded-lg transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="font-medium">Vibrante</span>
+                    <span className="text-[10px] text-zinc-500">Sunset + Pacifico</span>
+                  </button>
+                  <button 
+                    onClick={() => applyQuickStyle('elegante')}
+                    className="bg-zinc-900 border border-zinc-800 hover:border-amber-500 hover:bg-zinc-800 text-zinc-300 text-xs py-2 px-3 rounded-lg transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="font-medium">Elegante</span>
+                    <span className="text-[10px] text-zinc-500">Borda + Dourado</span>
+                  </button>
+                  <button 
+                    onClick={() => applyQuickStyle('minimalista')}
+                    className="bg-zinc-900 border border-zinc-800 hover:border-zinc-400 hover:bg-zinc-800 text-zinc-300 text-xs py-2 px-3 rounded-lg transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="font-medium">Minimalista</span>
+                    <span className="text-[10px] text-zinc-500">Claro + Limpo</span>
+                  </button>
+                </div>
+              </div>
+
+              <hr className="border-zinc-800" />
+
               {/* Format & Card Style */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -851,6 +1027,50 @@ FRASE 2: Outra frase diferente
               )}
             </div>
           )}
+          {/* SAVED TAB */}
+          {activeTab === 'saved' && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+              <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2"><Bookmark size={16}/> Meus Cards Salvos</h3>
+              
+              {savedCards.length === 0 ? (
+                <div className="text-center py-10 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                  <Bookmark size={32} className="mx-auto mb-3 opacity-20" />
+                  <p className="text-sm">Você ainda não salvou nenhum card.</p>
+                  <p className="text-xs mt-1">Crie um card e clique no botão de salvar.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {savedCards.map(card => (
+                    <div key={card.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 hover:border-zinc-700 transition-colors">
+                      <div className="flex-1">
+                        <p className="text-sm text-zinc-200 line-clamp-2 italic">"{card.quote}"</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md">{CARD_STYLES.find(s => s.value === card.cardStyle)?.label || card.cardStyle}</span>
+                          <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md">{card.font}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => loadSavedCard(card)}
+                          className="flex-1 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 py-2 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          Carregar
+                        </button>
+                        <button 
+                          onClick={() => deleteSavedCard(card.id)}
+                          className="bg-red-500/10 text-red-400 hover:bg-red-500/20 p-2 rounded-lg transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </aside>
 
@@ -936,23 +1156,32 @@ FRASE 2: Outra frase diferente
           </div>
 
           <div className="mt-8 flex flex-col items-center">
-            <button 
-              onClick={downloadCard} 
-              disabled={isDownloading || isDownloadingAll}
-              className={`px-8 py-3.5 rounded-full font-semibold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/25 ${
-                downloadSuccess 
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                  : (isDownloading || isDownloadingAll) ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:scale-105 active:scale-95'
-              }`}
-            >
-              {(isDownloading || isDownloadingAll) ? (
-                <><RefreshCw size={20} className="animate-spin" /> Processando...</>
-              ) : downloadSuccess ? (
-                <><CheckCircle2 size={20} /> Salvo com sucesso!</>
-              ) : (
-                <><Download size={20} /> Baixar Imagem em Alta Qualidade</>
-              )}
-            </button>
+            <div className="flex gap-3 items-center">
+              <button 
+                onClick={downloadCard} 
+                disabled={isDownloading || isDownloadingAll}
+                className={`px-8 py-3.5 rounded-full font-semibold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/25 ${
+                  downloadSuccess 
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                    : (isDownloading || isDownloadingAll) ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:scale-105 active:scale-95'
+                }`}
+              >
+                {(isDownloading || isDownloadingAll) ? (
+                  <><RefreshCw size={20} className="animate-spin" /> Processando...</>
+                ) : downloadSuccess ? (
+                  <><CheckCircle2 size={20} /> Salvo com sucesso!</>
+                ) : (
+                  <><Download size={20} /> Baixar Imagem em Alta Qualidade</>
+                )}
+              </button>
+              <button 
+                onClick={handleSaveCard}
+                className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-full transition-all shadow-lg flex items-center justify-center hover:scale-105 active:scale-95"
+                title="Salvar Card"
+              >
+                <Save size={20} />
+              </button>
+            </div>
             <p className="text-xs text-zinc-500 mt-3">A imagem será baixada no formato selecionado.</p>
           </div>
 
