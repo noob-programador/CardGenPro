@@ -5,8 +5,9 @@ import { saveAs } from 'file-saver';
 import { 
   Download, Image as ImageIcon, Type, Palette, 
   Sparkles, RefreshCw, Upload, AlignLeft, 
-  AlignCenter, AlignRight, CheckCircle2, AlertCircle,
-  ChevronDown, ChevronUp, Wand2, Save, Bookmark, Trash2
+  AlignCenter, AlignRight, AlignJustify, CheckCircle2, AlertCircle,
+  ChevronDown, ChevronUp, Wand2, Save, Bookmark, Trash2,
+  ArrowUp, ArrowDown, MoveVertical
 } from 'lucide-react';
 
 const QUOTES = [
@@ -95,7 +96,8 @@ interface SavedCard {
   textColor: string;
   gradient: string;
   fontSize: number;
-  textAlign: "left" | "center" | "right";
+  textAlign: "left" | "center" | "right" | "justify";
+  verticalAlign: "top" | "center" | "bottom";
   textBorderWidth: number;
   textBorderStyle: string;
   textBorderColor: string;
@@ -123,7 +125,8 @@ export default function App() {
   const [textColor, setTextColor] = useState("#ffffff");
   const [gradient, setGradient] = useState("none");
   const [fontSize, setFontSize] = useState(32);
-  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right" | "justify">("center");
+  const [verticalAlign, setVerticalAlign] = useState<"top" | "center" | "bottom">("center");
   const [textBorderWidth, setTextBorderWidth] = useState(0);
   const [textBorderStyle, setTextBorderStyle] = useState("solid");
   const [textBorderColor, setTextBorderColor] = useState("#ffffff");
@@ -177,7 +180,7 @@ export default function App() {
       id: Date.now().toString(),
       date: Date.now(),
       quote, handle, bgImage, format, cardStyle, cardBgColor,
-      font, textColor, gradient, fontSize, textAlign,
+      font, textColor, gradient, fontSize, textAlign, verticalAlign,
       textBorderWidth, textBorderStyle, textBorderColor,
       cardBorderWidth, cardBorderStyle, cardBorderColor,
       imageFilter, shadowColor, shadowX, shadowY, shadowBlur
@@ -198,6 +201,7 @@ export default function App() {
     setGradient(card.gradient);
     setFontSize(card.fontSize);
     setTextAlign(card.textAlign);
+    setVerticalAlign(card.verticalAlign || "center");
     setTextBorderWidth(card.textBorderWidth);
     setTextBorderStyle(card.textBorderStyle);
     setTextBorderColor(card.textBorderColor);
@@ -270,6 +274,33 @@ export default function App() {
         setShadowX(0);
         setShadowY(0);
         setShadowBlur(0);
+        break;
+      case 'neo-brutalista':
+        setCardStyle('bordered');
+        setFont('Montserrat');
+        setTextColor('#000000');
+        setCardBgColor('#ffff00');
+        setGradient('none');
+        setTextBorderWidth(0);
+        setCardBorderWidth(6);
+        setCardBorderStyle('solid');
+        setCardBorderColor('#000000');
+        setShadowColor('#000000');
+        setShadowX(8);
+        setShadowY(8);
+        setShadowBlur(0);
+        break;
+      case 'retro':
+        setCardStyle('default');
+        setFont('Lobster');
+        setTextColor('#4a2c2a');
+        setCardBgColor('#f5e6d3');
+        setGradient('none');
+        setTextBorderWidth(0);
+        setShadowColor('#000000');
+        setShadowX(2);
+        setShadowY(2);
+        setShadowBlur(4);
         break;
     }
   };
@@ -379,14 +410,36 @@ FRASE 2: Outra frase diferente
     const originalQuote = quote;
     
     try {
+      // Ensure fonts are loaded before starting
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+
       if (phrasesToDownload.length === 1) {
         setQuote(phrasesToDownload[0]);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for React to update the DOM and for layout to settle
+        await new Promise(resolve => setTimeout(resolve, 800));
+        if (document.fonts) await document.fonts.ready;
+
         const canvas = await html2canvas(previewRef.current, {
-          scale: 3,
+          scale: 4, // Ultra high quality
           useCORS: true,
           allowTaint: true,
           backgroundColor: cardStyle === 'transparent' ? null : undefined,
+          logging: false,
+          imageTimeout: 0,
+          removeContainer: true,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: previewRef.current.scrollWidth,
+          windowHeight: previewRef.current.scrollHeight,
+          onclone: (clonedDoc) => {
+            // Ensure fonts are loaded in the cloned document if possible
+            const clonedPreview = clonedDoc.querySelector('[data-preview-container]');
+            if (clonedPreview) {
+              // Any specific adjustments for the clone can be made here
+            }
+          }
         });
         const link = document.createElement('a');
         link.download = `card-motivacional-${Date.now()}.png`;
@@ -399,13 +452,22 @@ FRASE 2: Outra frase diferente
           setQuote(phrasesToDownload[i]);
           
           // Wait for React to render the new quote and fonts to settle
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Increased timeout and added font check
+          await new Promise(resolve => setTimeout(resolve, 800));
+          if (document.fonts) await document.fonts.ready;
           
           const canvas = await html2canvas(previewRef.current, {
-            scale: 3, // High quality
+            scale: 4, // Ultra high quality
             useCORS: true,
             allowTaint: true,
             backgroundColor: cardStyle === 'transparent' ? null : undefined,
+            logging: false,
+            imageTimeout: 0,
+            removeContainer: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: previewRef.current.scrollWidth,
+            windowHeight: previewRef.current.scrollHeight,
           });
           
           const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -436,13 +498,25 @@ FRASE 2: Outra frase diferente
     
     setIsDownloading(true);
     try {
-      // Temporarily remove border radius for clean download if needed, 
-      // but html2canvas handles it okay usually.
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+      
+      // Small delay to ensure everything is painted
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const canvas = await html2canvas(previewRef.current, {
-        scale: 3, // High quality
+        scale: 4, // Ultra high quality
         useCORS: true,
         allowTaint: true,
         backgroundColor: cardStyle === 'transparent' ? null : undefined,
+        logging: false,
+        imageTimeout: 0,
+        removeContainer: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: previewRef.current.scrollWidth,
+        windowHeight: previewRef.current.scrollHeight,
       });
       
       const link = document.createElement('a');
@@ -469,12 +543,14 @@ FRASE 2: Outra frase diferente
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '24px',
+      padding: '40px',
+      borderRadius: '24px',
       position: 'relative',
       overflow: 'hidden',
       transition: 'all 0.3s ease',
       backgroundColor: cardBgColor, // Use state instead of hardcoded zinc-900
       color: '#ffffff', // Force hex color to prevent oklch inheritance
+      boxSizing: 'border-box',
     };
 
     switch (cardStyle) {
@@ -528,14 +604,14 @@ FRASE 2: Outra frase diferente
       position: 'relative',
       zIndex: 10,
       width: '100%',
-      margin: 'auto 0',
+      margin: verticalAlign === 'center' ? 'auto 0' : verticalAlign === 'top' ? '0 0 auto 0' : 'auto 0 0 0',
       border: hasBorder ? `${textBorderWidth}px ${textBorderStyle} ${textBorderColor}` : undefined,
       padding: hasBorder ? '24px' : '0',
       borderRadius: hasBorder ? '16px' : '0',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      alignItems: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
+      alignItems: textAlign === 'center' || textAlign === 'justify' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start',
     };
   };
 
@@ -545,7 +621,11 @@ FRASE 2: Outra frase diferente
       fontSize: `${fontSize}px`,
       lineHeight: 1.3,
       textShadow: `${shadowX}px ${shadowY}px ${shadowBlur}px ${shadowColor}`,
-      display: 'inline-block',
+      display: 'block',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
+      width: '100%',
+      textAlign: textAlign,
     };
 
     if (gradient !== 'none') {
@@ -693,6 +773,20 @@ FRASE 2: Outra frase diferente
                     <span className="font-medium">Minimalista</span>
                     <span className="text-[10px] text-zinc-500">Claro + Limpo</span>
                   </button>
+                  <button 
+                    onClick={() => applyQuickStyle('neo-brutalista')}
+                    className="bg-zinc-900 border border-zinc-800 hover:border-yellow-400 hover:bg-zinc-800 text-zinc-300 text-xs py-2 px-3 rounded-lg transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="font-medium">Neo-brutalista</span>
+                    <span className="text-[10px] text-zinc-500">Amarelo + Preto</span>
+                  </button>
+                  <button 
+                    onClick={() => applyQuickStyle('retro')}
+                    className="bg-zinc-900 border border-zinc-800 hover:border-orange-400 hover:bg-zinc-800 text-zinc-300 text-xs py-2 px-3 rounded-lg transition-all flex flex-col items-center gap-1"
+                  >
+                    <span className="font-medium">Retro</span>
+                    <span className="text-[10px] text-zinc-500">Vintage + Quente</span>
+                  </button>
                 </div>
               </div>
 
@@ -834,11 +928,63 @@ FRASE 2: Outra frase diferente
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-zinc-400">Alinhamento</label>
-                    <div className="flex bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden">
-                      <button onClick={() => setTextAlign('left')} className={`flex-1 py-2 flex justify-center ${textAlign === 'left' ? 'bg-indigo-500/20 text-indigo-400' : 'text-zinc-400 hover:bg-zinc-800'}`}><AlignLeft size={16}/></button>
-                      <button onClick={() => setTextAlign('center')} className={`flex-1 py-2 flex justify-center border-x border-zinc-800 ${textAlign === 'center' ? 'bg-indigo-500/20 text-indigo-400' : 'text-zinc-400 hover:bg-zinc-800'}`}><AlignCenter size={16}/></button>
-                      <button onClick={() => setTextAlign('right')} className={`flex-1 py-2 flex justify-center ${textAlign === 'right' ? 'bg-indigo-500/20 text-indigo-400' : 'text-zinc-400 hover:bg-zinc-800'}`}><AlignRight size={16}/></button>
+                    <label className="text-xs font-medium text-zinc-400">Alinhamento Horizontal</label>
+                    <div className="flex bg-zinc-950 border border-zinc-800 rounded-lg p-1 gap-1">
+                      <button 
+                        onClick={() => setTextAlign('left')} 
+                        title="Alinhar à Esquerda"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${textAlign === 'left' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <AlignLeft size={18}/>
+                      </button>
+                      <button 
+                        onClick={() => setTextAlign('center')} 
+                        title="Alinhar ao Centro"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${textAlign === 'center' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <AlignCenter size={18}/>
+                      </button>
+                      <button 
+                        onClick={() => setTextAlign('right')} 
+                        title="Alinhar à Direita"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${textAlign === 'right' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <AlignRight size={18}/>
+                      </button>
+                      <button 
+                        onClick={() => setTextAlign('justify')} 
+                        title="Justificado"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${textAlign === 'justify' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <AlignJustify size={18}/>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-zinc-400">Alinhamento Vertical</label>
+                    <div className="flex bg-zinc-950 border border-zinc-800 rounded-lg p-1 gap-1">
+                      <button 
+                        onClick={() => setVerticalAlign('top')} 
+                        title="Alinhar ao Topo"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${verticalAlign === 'top' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <ArrowUp size={18}/>
+                      </button>
+                      <button 
+                        onClick={() => setVerticalAlign('center')} 
+                        title="Alinhar ao Centro"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${verticalAlign === 'center' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <MoveVertical size={18}/>
+                      </button>
+                      <button 
+                        onClick={() => setVerticalAlign('bottom')} 
+                        title="Alinhar à Base"
+                        className={`flex-1 py-2 flex justify-center rounded-md transition-all ${verticalAlign === 'bottom' ? 'bg-indigo-600 text-white shadow-lg' : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'}`}
+                      >
+                        <ArrowDown size={18}/>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1167,6 +1313,7 @@ FRASE 2: Outra frase diferente
           >
             <div 
               ref={previewRef} 
+              data-preview-container="true"
               style={getPreviewContainerStyle()}
             >
               {/* Background Image */}
