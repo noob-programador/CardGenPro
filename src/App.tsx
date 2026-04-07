@@ -89,6 +89,8 @@ interface SavedCard {
   quote: string;
   handle: string;
   bgImage: string | null;
+  bgOpacity: number;
+  bgBlur: number;
   format: string;
   cardStyle: string;
   cardBgColor: string;
@@ -116,6 +118,8 @@ export default function App() {
   const [quote, setQuote] = useState("Acredite em si mesmo e vá em frente!");
   const [handle, setHandle] = useState("@seuusuario");
   const [bgImage, setBgImage] = useState<string | null>(null);
+  const [bgOpacity, setBgOpacity] = useState(1);
+  const [bgBlur, setBgBlur] = useState(0);
   
   // Style State
   const [format, setFormat] = useState("9:16");
@@ -179,7 +183,7 @@ export default function App() {
     const newCard: SavedCard = {
       id: Date.now().toString(),
       date: Date.now(),
-      quote, handle, bgImage, format, cardStyle, cardBgColor,
+      quote, handle, bgImage, bgOpacity, bgBlur, format, cardStyle, cardBgColor,
       font, textColor, gradient, fontSize, textAlign, verticalAlign,
       textBorderWidth, textBorderStyle, textBorderColor,
       cardBorderWidth, cardBorderStyle, cardBorderColor,
@@ -193,6 +197,8 @@ export default function App() {
     setQuote(card.quote);
     setHandle(card.handle);
     setBgImage(card.bgImage);
+    setBgOpacity(card.bgOpacity ?? 1);
+    setBgBlur(card.bgBlur ?? 0);
     setFormat(card.format);
     setCardStyle(card.cardStyle);
     setCardBgColor(card.cardBgColor || "#18181b");
@@ -223,6 +229,9 @@ export default function App() {
   };
 
   const applyQuickStyle = (styleName: string) => {
+    setBgOpacity(1);
+    setBgBlur(0);
+    setImageFilter('brightness(80%)');
     switch (styleName) {
       case 'moderno':
         setCardStyle('glass');
@@ -274,6 +283,7 @@ export default function App() {
         setShadowX(0);
         setShadowY(0);
         setShadowBlur(0);
+        setBgImage(null);
         break;
       case 'neo-brutalista':
         setCardStyle('bordered');
@@ -311,8 +321,11 @@ export default function App() {
       const reader = new FileReader();
       reader.onload = (event) => {
         setBgImage(event.target?.result as string);
+        setBgOpacity(1); // Reset opacity when new image is uploaded
       };
       reader.readAsDataURL(file);
+      // Clear input value to allow re-uploading same file
+      e.target.value = '';
     }
   };
 
@@ -729,9 +742,41 @@ FRASE 2: Outra frase diferente
                   </div>
                 </div>
                 {bgImage && (
-                  <button onClick={() => setBgImage(null)} className="text-xs text-red-400 hover:text-red-300 mt-2">
-                    Remover imagem
-                  </button>
+                  <div className="space-y-4 mt-4 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-xs font-medium text-zinc-400">Opacidade da Imagem</label>
+                        <span className="text-xs text-zinc-500">{Math.round(bgOpacity * 100)}%</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="1" 
+                        step="0.01" 
+                        value={bgOpacity} 
+                        onChange={(e) => setBgOpacity(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-xs font-medium text-zinc-400">Desfoque (Blur)</label>
+                        <span className="text-xs text-zinc-500">{bgBlur}px</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="20" 
+                        step="1" 
+                        value={bgBlur} 
+                        onChange={(e) => setBgBlur(parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                      />
+                    </div>
+                    <button onClick={() => setBgImage(null)} className="text-xs text-red-400 hover:text-red-300 w-full text-center py-1 border border-red-900/30 rounded-lg hover:bg-red-900/10 transition-colors">
+                      Remover imagem
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1322,7 +1367,10 @@ FRASE 2: Outra frase diferente
                   src={bgImage} 
                   alt="Background" 
                   className="absolute inset-0 w-full h-full object-cover z-0"
-                  style={{ filter: imageFilter }}
+                  style={{ 
+                    filter: `${imageFilter} blur(${bgBlur}px)`,
+                    opacity: bgOpacity 
+                  }}
                   crossOrigin="anonymous"
                 />
               )}
