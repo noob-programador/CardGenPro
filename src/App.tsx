@@ -435,7 +435,7 @@ FRASE 2: Outra frase diferente
         if (document.fonts) await document.fonts.ready;
 
         const canvas = await html2canvas(previewRef.current, {
-          scale: 4, // Ultra high quality
+          scale: 3, // High quality and stable
           useCORS: true,
           allowTaint: true,
           backgroundColor: cardStyle === 'transparent' ? null : undefined,
@@ -444,13 +444,22 @@ FRASE 2: Outra frase diferente
           removeContainer: true,
           scrollX: 0,
           scrollY: 0,
-          windowWidth: previewRef.current.scrollWidth,
-          windowHeight: previewRef.current.scrollHeight,
+          width: FORMATS[format].w,
+          height: FORMATS[format].h,
+          windowWidth: FORMATS[format].w,
+          windowHeight: FORMATS[format].h,
           onclone: (clonedDoc) => {
-            // Ensure fonts are loaded in the cloned document if possible
-            const clonedPreview = clonedDoc.querySelector('[data-preview-container]');
+            const clonedPreview = clonedDoc.querySelector('[data-preview-container]') as HTMLElement;
             if (clonedPreview) {
-              // Any specific adjustments for the clone can be made here
+              clonedPreview.style.width = `${FORMATS[format].w}px`;
+              clonedPreview.style.height = `${FORMATS[format].h}px`;
+              clonedPreview.style.transform = 'none';
+
+              const textElement = clonedPreview.querySelector('span');
+              if (textElement) {
+                textElement.style.letterSpacing = 'normal';
+                textElement.style.textRendering = 'geometricPrecision';
+              }
             }
           }
         });
@@ -460,17 +469,20 @@ FRASE 2: Outra frase diferente
         link.click();
       } else {
         const zip = new JSZip();
+        const cardWidth = FORMATS[format].w;
+        const cardHeight = FORMATS[format].h;
+
         for (let i = 0; i < phrasesToDownload.length; i++) {
           setDownloadProgress({ current: i + 1, total: phrasesToDownload.length });
           setQuote(phrasesToDownload[i]);
           
           // Wait for React to render the new quote and fonts to settle
-          // Increased timeout and added font check
-          await new Promise(resolve => setTimeout(resolve, 800));
+          // Increased timeout slightly more for safety
+          await new Promise(resolve => setTimeout(resolve, 1000));
           if (document.fonts) await document.fonts.ready;
           
           const canvas = await html2canvas(previewRef.current, {
-            scale: 4, // Ultra high quality
+            scale: 3, // High quality but more stable than 4 in some environments
             useCORS: true,
             allowTaint: true,
             backgroundColor: cardStyle === 'transparent' ? null : undefined,
@@ -479,8 +491,25 @@ FRASE 2: Outra frase diferente
             removeContainer: true,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: previewRef.current.scrollWidth,
-            windowHeight: previewRef.current.scrollHeight,
+            width: cardWidth,
+            height: cardHeight,
+            windowWidth: cardWidth,
+            windowHeight: cardHeight,
+            onclone: (clonedDoc) => {
+              const clonedPreview = clonedDoc.querySelector('[data-preview-container]') as HTMLElement;
+              if (clonedPreview) {
+                clonedPreview.style.width = `${cardWidth}px`;
+                clonedPreview.style.height = `${cardHeight}px`;
+                clonedPreview.style.transform = 'none';
+                
+                // Fix potential overlapping text issue in clones
+                const textElement = clonedPreview.querySelector('span');
+                if (textElement) {
+                  textElement.style.letterSpacing = 'normal';
+                  textElement.style.textRendering = 'geometricPrecision';
+                }
+              }
+            }
           });
           
           const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
