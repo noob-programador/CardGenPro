@@ -434,32 +434,36 @@ FRASE 2: Outra frase diferente
         await new Promise(resolve => setTimeout(resolve, 800));
         if (document.fonts) await document.fonts.ready;
 
+        const cardWidth = FORMATS[format].w;
+        const cardHeight = FORMATS[format].h;
+
         const canvas = await html2canvas(previewRef.current, {
-          scale: 3, // High quality and stable
+          scale: 3,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: cardStyle === 'transparent' ? null : undefined,
+          backgroundColor: cardStyle === 'transparent' ? null : '#000000',
           logging: false,
           imageTimeout: 0,
           removeContainer: true,
-          scrollX: 0,
-          scrollY: 0,
-          width: FORMATS[format].w,
-          height: FORMATS[format].h,
-          windowWidth: FORMATS[format].w,
-          windowHeight: FORMATS[format].h,
+          width: cardWidth,
+          height: cardHeight,
+          x: 0,
+          y: 0,
           onclone: (clonedDoc) => {
             const clonedPreview = clonedDoc.querySelector('[data-preview-container]') as HTMLElement;
             if (clonedPreview) {
-              clonedPreview.style.width = `${FORMATS[format].w}px`;
-              clonedPreview.style.height = `${FORMATS[format].h}px`;
               clonedPreview.style.transform = 'none';
+              clonedPreview.style.width = `${cardWidth}px`;
+              clonedPreview.style.height = `${cardHeight}px`;
+              clonedPreview.style.borderRadius = '0';
 
-              const textElement = clonedPreview.querySelector('span');
-              if (textElement) {
-                textElement.style.letterSpacing = 'normal';
-                textElement.style.textRendering = 'geometricPrecision';
-              }
+              const textElements = clonedPreview.querySelectorAll('span');
+              textElements.forEach(el => {
+                el.style.width = '100%';
+                el.style.display = 'block';
+                el.style.wordSpacing = '0.1em';
+                el.style.letterSpacing = 'normal';
+              });
             }
           }
         });
@@ -469,6 +473,7 @@ FRASE 2: Outra frase diferente
         link.click();
       } else {
         const zip = new JSZip();
+        // Capture dimensions directly from the formats to ensure consistency
         const cardWidth = FORMATS[format].w;
         const cardHeight = FORMATS[format].h;
 
@@ -476,38 +481,40 @@ FRASE 2: Outra frase diferente
           setDownloadProgress({ current: i + 1, total: phrasesToDownload.length });
           setQuote(phrasesToDownload[i]);
           
-          // Wait for React to render the new quote and fonts to settle
-          // Increased timeout slightly more for safety
+          // Wait for render and font loading
           await new Promise(resolve => setTimeout(resolve, 1000));
           if (document.fonts) await document.fonts.ready;
           
           const canvas = await html2canvas(previewRef.current, {
-            scale: 3, // High quality but more stable than 4 in some environments
+            scale: 3, 
             useCORS: true,
             allowTaint: true,
-            backgroundColor: cardStyle === 'transparent' ? null : undefined,
+            backgroundColor: cardStyle === 'transparent' ? null : '#000000',
             logging: false,
             imageTimeout: 0,
             removeContainer: true,
-            scrollX: 0,
-            scrollY: 0,
+            // These properties ensure we capture ONLY the card area
             width: cardWidth,
             height: cardHeight,
-            windowWidth: cardWidth,
-            windowHeight: cardHeight,
+            x: 0,
+            y: 0,
             onclone: (clonedDoc) => {
               const clonedPreview = clonedDoc.querySelector('[data-preview-container]') as HTMLElement;
               if (clonedPreview) {
+                // Ensure the cloned element is NOT transformed and has correct size
+                clonedPreview.style.transform = 'none';
                 clonedPreview.style.width = `${cardWidth}px`;
                 clonedPreview.style.height = `${cardHeight}px`;
-                clonedPreview.style.transform = 'none';
+                clonedPreview.style.borderRadius = '0'; // Avoid border artifacts in capture
                 
-                // Fix potential overlapping text issue in clones
-                const textElement = clonedPreview.querySelector('span');
-                if (textElement) {
-                  textElement.style.letterSpacing = 'normal';
-                  textElement.style.textRendering = 'geometricPrecision';
-                }
+                // CRITICAL: Fix for text overlapping and missing spaces
+                const textElements = clonedPreview.querySelectorAll('span');
+                textElements.forEach(el => {
+                  el.style.width = '100%';
+                  el.style.display = 'block';
+                  el.style.wordSpacing = '0.1em'; // Force space between words
+                  el.style.letterSpacing = 'normal';
+                });
               }
             }
           });
